@@ -235,16 +235,229 @@ int main()
 					
 					<section data-markdown>
 						<script type="text/template">
-							## Stash
+							## Stack.h
 							```
+//: C04:Stack.h
+// From Thinking in C++, 2nd Edition
+// Available at http://www.BruceEckel.com
+// (c) Bruce Eckel 2000
+// Copyright notice in Copyright.txt
+// Nested struct in linked list
+#ifndef STACK_H
+#define STACK_H
+
+struct Stack {
+  struct Link {
+    void* data;
+    Link* next;
+    void initialize(void* dat, Link* nxt);
+  }* head;
+
+  void initialize();
+
+  void push(void* dat);
+  void* peek();
+  void* pop();
+
+  void cleanup();
+};
+#endif // STACK_H ///:~
 							```
 						</script>
 					</section>
 					
 					<section data-markdown>
 						<script type="text/template">
-							## Stack
+							## Stack.cpp
 							```
+//: C04:Stack.cpp {O}
+// From Thinking in C++, 2nd Edition
+// Available at http://www.BruceEckel.com
+// (c) Bruce Eckel 2000
+// Copyright notice in Copyright.txt
+// Linked list with nesting
+#include <Stack.h>
+#include <require.h>
+using namespace std;
+
+void 
+Stack::Link::initialize(void* dat, Link* nxt) {
+  data = dat;
+  next = nxt;
+}
+
+void Stack::initialize() { head = 0; }
+
+void Stack::push(void* dat) {
+  Link* newLink = new Link;
+  newLink->initialize(dat, head);
+  head = newLink;
+}
+
+void* Stack::peek() { 
+  require(head != 0, "Stack empty");
+  return head->data; 
+}
+
+void* Stack::pop() {
+  if(head == 0) return 0;
+  void* result = head->data;
+  Link* oldHead = head;
+  head = head->next;
+  delete oldHead;
+  return result;
+}
+
+void Stack::cleanup() {
+  require(head == 0, "Stack not empty");
+} ///:~
+							```
+						</script>
+					</section>
+					
+					<section data-markdown>
+						<script type="text/template">
+							## StackTest.cpp
+							```
+//: C04:StackTest.cpp
+// From Thinking in C++, 2nd Edition
+// Available at http://www.BruceEckel.com
+// (c) Bruce Eckel 2000
+// Copyright notice in Copyright.txt
+//{L} Stack
+//{T} StackTest.cpp
+// Test of nested linked list
+#include <Stack.h>
+#include <require.h>
+#include <fstream>
+#include <iostream>
+#include <string>
+using namespace std;
+
+int main(int argc, char* argv[]) {
+  requireArgs(argc, 1); // File name is argument
+  ifstream in(argv[1]);
+  assure(in, argv[1]);
+
+  Stack textlines;
+  textlines.initialize();
+
+  string line;
+  // Read file and store lines in the Stack:
+  while(getline(in, line))
+    textlines.push(new string(line));
+  
+  // Pop the lines from the Stack and print them:
+  string* s;
+
+  while((s = (string*)textlines.pop()) != 0) {
+    cout << *s << endl;
+    delete s; 
+  }
+
+  textlines.cleanup();
+} ///:~
+							```
+							
+						</script>
+					</section>
+					
+					<section data-markdown>
+						<script type="text/template">
+							## makefile
+							```
+# Definitions for constants
+CC=g++
+CFLAGS = -I. 
+
+# This will create your final output using .o compiled files
+make: StackTest.o Stack.o
+	$(CC) $(CFLAGS) -o main StackTest.o Stack.o
+
+StackTest.o: StackTest.cpp Stack.h
+	$(CC) $(CFLAGS) -c StackTest.cpp -o StackTest.o
+
+Stack.o: Stack.cpp Stack.h
+	$(CC) $(CFLAGS) -c Stack.cpp -o Stack.o
+	
+# This will clean or remove compiled files so you can start fresh
+clean:
+	rm -f *.o *.exe getStuff/*.o
+							```
+							* ./main.exe test.txt
+						</script>
+					</section>
+					
+					<section data-markdown>
+						<script type="text/template">
+							## require.h
+							```
+//: :require.h
+// From Thinking in C++, 2nd Edition
+// Available at http://www.BruceEckel.com
+// (c) Bruce Eckel 2000
+// Copyright notice in Copyright.txt
+// Test for error conditions in programs
+// Local "using namespace std" for old compilers
+#ifndef REQUIRE_H
+#define REQUIRE_H
+#include <cstdio>
+#include <cstdlib>
+#include <fstream>
+#include <string>
+
+inline void require(bool requirement, 
+  const std::string& msg = "Requirement failed"){
+  using namespace std;
+  if (!requirement) {
+    fputs(msg.c_str(), stderr);
+    fputs("\n", stderr);
+    exit(1);
+  }
+}
+
+inline void requireArgs(int argc, int args, 
+  const std::string& msg = 
+    "Must use %d arguments") {
+  using namespace std;
+   if (argc != args + 1) {
+     fprintf(stderr, msg.c_str(), args);
+     fputs("\n", stderr);
+     exit(1);
+   }
+}
+
+inline void requireMinArgs(int argc, int minArgs,
+  const std::string& msg =
+    "Must use at least %d arguments") {
+  using namespace std;
+  if(argc < minArgs + 1) {
+    fprintf(stderr, msg.c_str(), minArgs);
+    fputs("\n", stderr);
+    exit(1);
+  }
+}
+  
+inline void assure(std::ifstream& in, 
+  const std::string& filename = "") {
+  using namespace std;
+  if(!in) {
+    fprintf(stderr, "Could not open file %s\n",
+      filename.c_str());
+    exit(1);
+  }
+}
+
+inline void assure(std::ofstream& out, 
+  const std::string& filename = "") {
+  using namespace std;
+  if(!out) {
+    fprintf(stderr, "Could not open file %s\n", 
+      filename.c_str());
+    exit(1);
+  }
+}
+#endif // REQUIRE_H ///:~
 							```
 						</script>
 					</section>
@@ -259,16 +472,32 @@ int main()
 					
 					<section data-markdown>
 						<script type="text/template">
-							## Stash
+							## Stack.h
 							```
-							```
-						</script>
-					</section>
-					
-					<section data-markdown>
-						<script type="text/template">
-							## Stack
-							```
+//: C05:Stack2.h
+// From Thinking in C++, 2nd Edition
+// Available at http://www.BruceEckel.com
+// (c) Bruce Eckel 2000
+// Copyright notice in Copyright.txt
+// Nested structs via linked list
+#ifndef STACK2_H
+#define STACK2_H
+
+class Stack {
+  struct Link {
+    void* data;
+    Link* next;
+    void initialize(void* dat, Link* nxt);
+  }* head;
+
+public:
+  void initialize();
+  void push(void* dat);
+  void* peek();
+  void* pop();
+  void cleanup();
+};
+#endif // STACK2_H ///:~
 							```
 						</script>
 					</section>
